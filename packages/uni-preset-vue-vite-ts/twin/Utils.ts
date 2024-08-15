@@ -430,7 +430,6 @@ export const drewCircleHole = (
     type,
     hole,
     holeNum,
-    wkt: point,
   };
   sphere.position.copy(point);
   sphere.rotateY(Math.PI / 2);

@@ -1,7 +1,7 @@
 /* eslint-disable prefer-const */
 import * as THREE from 'three';
 import { DragControls } from 'three/examples/jsm/controls/DragControls.js';
-import { drewRect, createSphere } from'../../../../twin';
+import { drewRect, createSphere } from'../../../twin';
 
 const usePlaneDrag = (props: any) => {
     const { twin, sphereEndDragList, planeParamsList } = props;

@@ -14,11 +14,14 @@
   <div ref="webgl"></div>
 
   <wd-row class="footer" v-show="tabToolName === '标剖面'">
-    <wd-button hairline block @click="onPlaneAttrShow">剖面属性</wd-button>
+    <wd-button hairline @click="onPlaneAttrShow">剖面属性</wd-button>
   </wd-row>
 
   <!-- 剖面属性弹框 -->
   <plane-attr-modal :show="planeAttrShow" @close="onClosePlaneAttr" />
+
+  <!-- 需要在页面中引入该组件wd-toast，作为挂载点。 -->
+  <wd-toast />
 </template>
 
 <script setup lang="ts">
@@ -38,13 +41,14 @@ import {
   removePlanes,
   rangingFn,
   createDirectionNorth,
-} from "../../../../twin";
+} from "../../../twin";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-// import { useToast } from "wot-design-uni";
+import { cloneDeep } from 'lodash-es';
+import { useToast } from "wot-design-uni";
 import UsePlaneDrag from "./usePlaneDrag.js";
 import PlaneAttrModal from "./PlaneAttrModal.vue";
 
-// const toast = useToast();
+const toast = useToast();
 
 const tabTools = ["标剖面", "标管孔", "测距", "删除", "立视图"];
 const tabToolName = ref<string>("标剖面");
@@ -75,6 +79,13 @@ const holeParamsList = []; // 管孔参数列表
 // 剖面属性
 const planeAttrShow = ref<boolean>(false);
 const selectPlane = ref();
+const isActived = ref<boolean>(false); // 剖面是否处于选中态
+
+// 管孔属性
+const hole = ref<number>(175); // 管孔直径尺寸
+let holeNum: number; // 管孔序号为了保证唯一使用时间戳
+let holeDragList = []; // 圆形管孔列表
+const holeGroup = new THREE.Group(); // 圆形管孔组
 
 UsePlaneDrag({ twin, sphereEndDragList, planeParamsList });
 
@@ -102,8 +113,6 @@ const onTabViewsChange = (item: { name: string; index: number }) => {
 // 加载gltf文件
 loader.load("src/static/textured_output08.gltf", (gltf) => {
   const mesh = gltf.scene.children[0];
-  
- console.log('mesh', mesh)
   box3Center(mesh);
   mesh.translateY(0.4);
   twin.scene?.add(mesh);
@@ -116,7 +125,7 @@ const rayCasterPoint = (event: MouseEvent) => {
     return point;
   } else {
     // message.warn('请点击模型非空区域');
-    // toast.show("请点击模型非空区域");
+    toast.warning("请点击模型非空区域");
     return null;
   }
 };
@@ -125,7 +134,7 @@ const rayCasterPoint = (event: MouseEvent) => {
 const drawSphere = (point: THREE.Vector3, type: string) => {
   if (!point) {
     // message.warn('请点击模型非空区域xx');
-    // toast.show("请点击模型非空区域xx");
+    toast.warning("请点击模型非空区域xx");
     return null;
   }
   const sphere = createSphere(point, twin.camera);
@@ -173,7 +182,7 @@ const onDrewPlane = (event: MouseEvent) => {
         sizeDB,
         sizeAD,
         sizeCB,
-        cube
+        cube,
       } = drewRect(p1, point, pageNum);
       sphereEnd = drawSphere(point, "终点坐标");
       planeGroup.add(
@@ -184,7 +193,7 @@ const onDrewPlane = (event: MouseEvent) => {
         rect,
         sphereStart,
         sphereEnd,
-        cube,
+        cube
       );
 
       twin.scene.add(planeGroup);
@@ -210,10 +219,30 @@ const onDrewPlane = (event: MouseEvent) => {
   }
 };
 
+// 打开剖面属性弹框
 const onPlaneAttrShow = () => {
   planeAttrShow.value = true;
+};
 
-  console.log('selectPlane=====================', selectPlane.value);
+// 绘制管孔
+const onDrewHole = (event: MouseEvent) => {
+  holeNum = +new Date();
+  const point = rayCasterPoint(event);
+  if (!point) return;
+  const ellipse = drewCircleHole(point, hole.value, holeNum);
+  holeGroup.add(ellipse);
+  twin.scene.add(holeGroup);
+  
+  holeDragList.push(ellipse);
+  const holeParams = {
+    hole: hole.value,
+    point,
+    mesh: ellipse,
+  };
+
+  holeParamsList.push(cloneDeep(holeParams)); // 深拷贝之后就不能修改管孔颜色了
+
+  console.log('twin.scene', twin.scene.children);
 };
 
 // 删除
@@ -233,29 +262,47 @@ const onDelete = (
     item.remove(...list);
   });
 };
-const isActived = ref<boolean>(false);
+
+// 剖面的选中态切换
+const onPlaneActiveToggle = (mesh: any) => {
+  // 当前选中的剖面序号，如：剖面序号1
+  const currentPlaneName = mesh.object.name.slice(5, 10);
+  // 递归处理剖面的选中态
+  twin.scene.children?.forEach((item: any) => {
+    if (!item.isGroup) return;
+    item.children?.forEach((ele: any) => {
+      isActived.value = !isActived.value;
+      // 当前剖面的选中状态
+      if (ele.name.slice(5, 10) === currentPlaneName) {
+        // 把选中的当前剖面的线变为蓝色
+        if (["线"].includes(ele.userData.type)) {
+          ele.material?.color.set(0x0000ff);
+          // 把选中的当前剖面的'选中块'变为蓝色
+        } else if (["选中"].includes(ele.userData.type)) {
+          ele.material?.color.set(0x0000ff);
+        }
+      } else {
+        // 其他剖面的选中状态
+        if (["线"].includes(ele.userData.type)) {
+          ele.material?.color.set(0xffff00);
+        } else if (["选中"].includes(ele.userData.type)) {
+          ele.material?.color.set(0xffff00);
+        } else if (["方向"].includes(ele.userData.type)) {
+          planeGroup.remove(ele);
+        }
+      }
+    });
+  });
+};
 
 const onClick = (event: MouseEvent) => {
-  event.preventDefault();
-  // event.button 枚举：0 代表左键，1 代表中键，2 代表右键；
-  // 仅左键支持绘制，因为右键绘制和拖拽功能冲突;
-  if (event.button !== 0) return;
-  const { mesh, point } = getRayCasterPoint(event, twin);
+  const { mesh } = getRayCasterPoint(event, twin);
+  selectPlane.value = mesh?.object;
 
-  console.log('mesh?.object?.name', mesh?.object?.name)
-
-  // 若点击了起点坐标则表示当前剖面处于选中状态，改变起点小球颜色
-  if (mesh?.object?.name?.includes('选中')) {
-    mesh.object.material.color.set(isActived.value ? 0xff0000 : 0xffff00);
-    selectPlane.value = mesh.object;
-    isActived.value = !isActived.value;
+  // 若点击了右上角选中块儿则表示当前剖面处于选中状态
+  if (mesh?.object?.name?.includes("选中")) {
+    onPlaneActiveToggle(mesh);
     return;
-  }
-
-  if (clickNum === 1) {
-    planeParamsList.forEach((item) => {
-      const bool = box3IsContainsPoint(item, point, twin);
-    });
   }
 
   if (tabToolName.value === "标剖面") {
@@ -263,7 +310,7 @@ const onClick = (event: MouseEvent) => {
     onDrewPlane(event);
   } else if (tabToolName.value === "标管孔") {
     // 圆形管孔标注
-    // onDrewHole(event);
+    onDrewHole(event);
   } else if (tabToolName.value === "测距") {
     // 测距
     // onDrewRanging(event);
@@ -296,7 +343,7 @@ const onClosePlaneAttr = (data) => {
     planeGroup.add(mesh);
     twin.scene.add(planeGroup);
   }
-}
+};
 
 const onMouseMove = (event: MouseEvent) => {
   event.preventDefault();
@@ -306,9 +353,22 @@ const onMouseMove = (event: MouseEvent) => {
   removePlanes(twin);
   if (p1 && point) {
     sphereEnd = drawSphere(point, "终点坐标");
-    const { rect, sizeAC, sizeDB, sizeAD, sizeCB, cube } = drewRect(p1, point, pageNum);
+    const { rect, sizeAC, sizeDB, sizeAD, sizeCB, cube } = drewRect(
+      p1,
+      point,
+      pageNum
+    );
 
-    planeGroup.add(sizeAC, sizeDB, sizeAD, sizeCB, rect, sphereStart, sphereEnd, cube);
+    planeGroup.add(
+      sizeAC,
+      sizeDB,
+      sizeAD,
+      sizeCB,
+      rect,
+      sphereStart,
+      sphereEnd,
+      cube
+    );
     planeGroup.name = "剖面组";
     twin.scene.add(planeGroup);
     sphereEndDragList.push(sphereEnd);
@@ -366,8 +426,7 @@ twin.scene.add(axesHelper);
 
 .footer {
   position: fixed;
-  bottom: 0;
+  bottom: 10px;
   height: 40px;
-  width: 100%;
 }
 </style>
