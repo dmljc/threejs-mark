@@ -332,8 +332,8 @@ export const css2RendererStyle = (twin: CreateTwin) => {
   twin.css2Renderer.domElement.style.pointerEvents = "none";
 };
 
-// 创建右上角点击选中的立方体
-export const drewBox = (C: THREE.Vector3, pageNum: number) => {
+// 创建剖面右上角点击选中的立方体
+export const drewPlaneActiveBox = (C: THREE.Vector3, pageNum: number) => {
   const geometry = new THREE.BoxGeometry(0.02, 0.08, 0.1);
   const material = new THREE.MeshBasicMaterial({
     color: 0xffff00,
@@ -349,6 +349,31 @@ export const drewBox = (C: THREE.Vector3, pageNum: number) => {
     eventType,
   };
   return cube;
+};
+
+// 创建圆形管孔内的电缆
+export const drewHoleCable = (
+  point: THREE.Vector3,
+  hole: number,
+  holeNum: number
+) => {
+  const geometry = new THREE.CircleGeometry(0.03);
+  const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+  const circle = new THREE.Mesh(geometry, material);
+
+  circle.position.copy(point);
+  circle.rotateY(Math.PI / 2);
+  const type = "圆形管孔";
+  const name = "电缆";
+  circle.name = `${type}-直径${hole}-${holeNum}-${name}`;
+  circle.userData = {
+    hole,
+    type,
+    name,
+    holeNum,
+  };
+
+  return circle;
 };
 
 /*
@@ -392,7 +417,7 @@ export const drewRect = (
   const sizeCB = createMarkLength(C, B, depth, pageNum);
 
   // 方向正北
-  const cube = drewBox(C, pageNum); // 立方体
+  const cube = drewPlaneActiveBox(C, pageNum); // 立方体
 
   return {
     length,
@@ -416,7 +441,7 @@ export const drewCircleHole = (
   holeNum: number
 ) => {
   const radius = hole / (1000 * 2);
-  const tube = 0.005; // 即圆弧线的粗细
+  const tube = 0.012; // 即圆弧线的粗细
   // 圆环几何体
   const geometry = new THREE.TorusGeometry(radius, tube);
   const material = new THREE.MeshBasicMaterial({
@@ -424,25 +449,33 @@ export const drewCircleHole = (
     side: THREE.DoubleSide,
   });
 
-  const sphere = new THREE.Mesh(geometry, material);
-  const type = "管孔";
-  sphere.userData = {
+  const torus = new THREE.Mesh(geometry, material);
+  const type = "圆形管孔";
+  torus.userData = {
     type,
     hole,
     holeNum,
   };
-  sphere.position.copy(point);
-  sphere.rotateY(Math.PI / 2);
-  sphere.name = `管孔-直径${hole}-${holeNum}`;
-  return sphere;
+  torus.position.copy(point);
+  torus.rotateY(Math.PI / 2);
+  torus.name = `${type}-直径${hole}-${holeNum}`;
+
+  const circle = drewHoleCable(point, hole, holeNum);
+  return {
+    torus,
+    circle,
+  };
 };
 
 /*
  *createHoleSize() 创建管孔尺寸
  *@params: (event: Event 对象)
  */
-export const createHoleSize = (event: any, holeNum: number) => {
-  const { hole } = event.object.userData;
+export const createHoleSize = (
+  point: THREE.Vector3,
+  hole: number,
+  holeNum: number
+) => {
   const div = document.createElement("div");
   div.style.color = "#fff";
   div.style.padding = "2px 6px";
@@ -452,9 +485,18 @@ export const createHoleSize = (event: any, holeNum: number) => {
 
   const holeSize = new CSS2DObject(div);
   // 以鼠标位置为中心
-  holeSize.position.copy(event.object.position);
-  holeSize.position.y += hole / 480;
-  holeSize.name = `管孔-直径${hole}-${holeNum}`;
+  holeSize.position.copy(point);
+  holeSize.position.y += hole / 1300;
+  const type = "圆形管孔";
+  const name = "尺寸";
+  holeSize.name = `${type}-直径${hole}-${holeNum}-${name}`;
+
+  holeSize.userData = {
+    type,
+    name,
+    hole,
+    holeNum,
+  };
   return holeSize;
 };
 

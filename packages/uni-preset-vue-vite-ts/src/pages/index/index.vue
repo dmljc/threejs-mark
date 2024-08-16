@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watchEffect } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import * as THREE from "three";
 import {
   CreateTwin,
@@ -36,6 +36,7 @@ import {
   drewRect,
   drewCircleHole,
   average,
+  createHoleSize,
   box3IsContainsBox,
   box3IsContainsPoint,
   removePlanes,
@@ -45,13 +46,14 @@ import {
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { cloneDeep } from 'lodash-es';
 import { useToast } from "wot-design-uni";
-import UsePlaneDrag from "./usePlaneDrag.js";
+import UsePlaneDrag from "./usePlaneDrag";
+import UseHoleDrag from "./useHoleDrag";
 import PlaneAttrModal from "./PlaneAttrModal.vue";
 
 const toast = useToast();
 
 const tabTools = ["标剖面", "标管孔", "测距", "删除", "立视图"];
-const tabToolName = ref<string>("标剖面");
+const tabToolName = ref<string>("标管孔");
 
 const tabViews = ["主视图", "左视图", "俯视图", "重置"];
 const tabViewName = ref<string>("重置");
@@ -83,11 +85,13 @@ const isActived = ref<boolean>(false); // 剖面是否处于选中态
 
 // 管孔属性
 const hole = ref<number>(175); // 管孔直径尺寸
-let holeNum: number; // 管孔序号为了保证唯一使用时间戳
-let holeDragList = []; // 圆形管孔列表
-const holeGroup = new THREE.Group(); // 圆形管孔组
+let holeNum: number = +new Date()// 管孔序号为了保证唯一使用时间戳
+let holeDragList: any = []; // 圆形管孔列表
+const holeGroup = new THREE.Group();
 
 UsePlaneDrag({ twin, sphereEndDragList, planeParamsList });
+
+const { holeDragedList } = UseHoleDrag({ twin, holeDragList, hole: hole.value, holeNum });
 
 const onTabToolsChange = (item: { name: string; index: number }) => {
   tabToolName.value = item.name;
@@ -124,7 +128,6 @@ const rayCasterPoint = (event: MouseEvent) => {
   if (point) {
     return point;
   } else {
-    // message.warn('请点击模型非空区域');
     toast.warning("请点击模型非空区域");
     return null;
   }
@@ -133,7 +136,6 @@ const rayCasterPoint = (event: MouseEvent) => {
 // 画小圆点
 const drawSphere = (point: THREE.Vector3, type: string) => {
   if (!point) {
-    // message.warn('请点击模型非空区域xx');
     toast.warning("请点击模型非空区域xx");
     return null;
   }
@@ -229,20 +231,22 @@ const onDrewHole = (event: MouseEvent) => {
   holeNum = +new Date();
   const point = rayCasterPoint(event);
   if (!point) return;
-  const ellipse = drewCircleHole(point, hole.value, holeNum);
-  holeGroup.add(ellipse);
-  twin.scene.add(holeGroup);
-  
-  holeDragList.push(ellipse);
-  const holeParams = {
-    hole: hole.value,
-    point,
-    mesh: ellipse,
-  };
+  const { torus, circle } = drewCircleHole(point, hole.value, holeNum);
+  const holeSize = createHoleSize(point, hole.value, holeNum);
 
-  holeParamsList.push(cloneDeep(holeParams)); // 深拷贝之后就不能修改管孔颜色了
+  console.log('holeSize====', holeSize);
+  twin.scene.add(torus, circle, holeSize);
 
-  console.log('twin.scene', twin.scene.children);
+  holeDragList.push(torus);
+
+  // console.log('circle.name', circle.name);
+  // const holeParams = {
+  //   hole: hole.value,
+  //   point,
+  //   mesh: ellipse,
+  // };
+
+  // holeParamsList.push(cloneDeep(holeParams)); // 深拷贝之后就不能修改管孔颜色了
 };
 
 // 删除
@@ -411,6 +415,7 @@ onUnmounted(() => {
 const axesHelper = new THREE.AxesHelper(80);
 axesHelper.translateY(0.4);
 twin.scene.add(axesHelper);
+
 </script>
 
 <style scoped lang="scss">
