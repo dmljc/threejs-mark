@@ -358,17 +358,20 @@ export const drewHoleCable = (
   holeNum: number
 ) => {
   const geometry = new THREE.CircleGeometry(0.03);
-  const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xff0000,
+    side: THREE.DoubleSide,
+  });
   const circle = new THREE.Mesh(geometry, material);
 
   circle.position.copy(point);
   circle.rotateY(Math.PI / 2);
-  const type = "圆形管孔";
+  const shape = "圆形管孔";
   const name = "电缆";
-  circle.name = `${type}-直径${hole}-${holeNum}-${name}`;
+  circle.name = `${shape}-直径${hole}:${holeNum}-${name}`;
   circle.userData = {
     hole,
-    type,
+    shape,
     name,
     holeNum,
   };
@@ -450,15 +453,17 @@ export const drewCircleHole = (
   });
 
   const torus = new THREE.Mesh(geometry, material);
-  const type = "圆形管孔";
+  const shape = "圆形管孔";
+  const name = "管孔";
   torus.userData = {
-    type,
+    shape,
     hole,
     holeNum,
+    name,
   };
   torus.position.copy(point);
   torus.rotateY(Math.PI / 2);
-  torus.name = `${type}-直径${hole}-${holeNum}`;
+  torus.name = `${shape}-直径${hole}:${holeNum}-${name}`;
 
   const circle = drewHoleCable(point, hole, holeNum);
   return {
@@ -486,13 +491,13 @@ export const createHoleSize = (
   const holeSize = new CSS2DObject(div);
   // 以鼠标位置为中心
   holeSize.position.copy(point);
-  holeSize.position.y += hole / 1300;
-  const type = "圆形管孔";
+  holeSize.position.y += hole / 1500;
+  const shape = "圆形管孔";
   const name = "尺寸";
-  holeSize.name = `${type}-直径${hole}-${holeNum}-${name}`;
+  holeSize.name = `${shape}-直径${hole}:${holeNum}-${name}`;
 
   holeSize.userData = {
-    type,
+    shape,
     name,
     hole,
     holeNum,

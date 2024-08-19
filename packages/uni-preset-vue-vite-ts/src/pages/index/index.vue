@@ -234,9 +234,7 @@ const onDrewHole = (event: MouseEvent) => {
   const { torus, circle } = drewCircleHole(point, hole.value, holeNum);
   const holeSize = createHoleSize(point, hole.value, holeNum);
 
-  console.log('holeSize====', holeSize);
   twin.scene.add(torus, circle, holeSize);
-
   holeDragList.push(torus);
 
   // console.log('circle.name', circle.name);
@@ -250,21 +248,30 @@ const onDrewHole = (event: MouseEvent) => {
 };
 
 // 删除
-const onDelete = (
-  mesh: THREE.Intersection<THREE.Object3D<THREE.Object3DEventMap>>
-) => {
+const onDelete = (mesh) => {
+  let holeArr = [];
   const currentName = mesh.object.name?.split("-")?.[1];
-
+  // 删除剖面
   twin.scene.children.forEach((item) => {
-    let list: THREE.Object3D<THREE.Object3DEventMap>[] = [];
+    let planeArr = [];
+    // 剖面
     item?.children?.forEach((el) => {
       if (el.name?.includes(currentName)) {
-        list.push(el);
+        planeArr.push(el);
       }
     });
+
+    // 把属于同一个管孔的电缆，管孔，尺寸都放在同一个数组，方便从场景中移除
+    if (item.name.includes(currentName)) {
+      holeArr.push(item);
+    }
+    
     // 把属于同一个剖面的点，线，尺寸都放在同一个数组，方便从场景中移除
-    item.remove(...list);
+    item.remove(...planeArr);
   });
+
+  // 删管管孔
+  twin.scene.remove(...holeArr);
 };
 
 // 剖面的选中态切换
@@ -278,12 +285,12 @@ const onPlaneActiveToggle = (mesh: any) => {
       isActived.value = !isActived.value;
       // 当前剖面的选中状态
       if (ele.name.slice(5, 10) === currentPlaneName) {
-        // 把选中的当前剖面的线变为蓝色
+        // 把选中的当前剖面的线变为浅蓝色
         if (["线"].includes(ele.userData.type)) {
-          ele.material?.color.set(0x0000ff);
-          // 把选中的当前剖面的'选中块'变为蓝色
+          ele.material?.color.set(0x00ffff);
+          // 把选中的当前剖面的'选中块'变为浅蓝色
         } else if (["选中"].includes(ele.userData.type)) {
-          ele.material?.color.set(0x0000ff);
+          ele.material?.color.set(0x00ffff);
         }
       } else {
         // 其他剖面的选中状态
@@ -300,11 +307,12 @@ const onPlaneActiveToggle = (mesh: any) => {
 };
 
 const onClick = (event: MouseEvent) => {
+  event.preventDefault();
   const { mesh } = getRayCasterPoint(event, twin);
   selectPlane.value = mesh?.object;
 
   // 若点击了右上角选中块儿则表示当前剖面处于选中状态
-  if (mesh?.object?.name?.includes("选中")) {
+  if (tabToolName.value !== "删除" && mesh?.object?.name?.includes("选中")) {
     onPlaneActiveToggle(mesh);
     return;
   }
