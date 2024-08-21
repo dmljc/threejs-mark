@@ -78,7 +78,7 @@ export const getRayCasterPoint = (event: MouseEvent, twin: CreateTwin) => {
 export const createSphere = (
   point: THREE.Vector3,
   camera: THREE.PerspectiveCamera,
-  num = 200
+  num = 100
 ) => {
   const L = camera.position.clone().sub(point).length();
   const geometry = new THREE.SphereGeometry(L / num);
@@ -138,15 +138,15 @@ export const deleteIcon = (point: THREE.Vector3, rangingNum: number) => {
   div.style.color = "#ff0";
   div.innerHTML = "x";
   const delIcon = new CSS2DObject(div);
-  // point.y += 0.26;
+  point.y -= 0.006;
   const type = "测距";
   const name = "删除";
   delIcon.position.copy(point);
-  delIcon.name = `${type}-${name}-${rangingNum}`;
+  delIcon.name = `${type}-${type}:${rangingNum}-${name}`;
   delIcon.userData = {
     type,
-    name,
     rangingNum,
+    name,
   };
   return delIcon;
 };
@@ -171,7 +171,8 @@ export const rangingFn = (
   const line = new THREE.Mesh(geometry, material);
   const lineType = "测距";
   const lineName = "线";
-  line.name = `${lineType}-${lineName}-${rangingNum}`;
+
+  line.name = `${lineType}-${lineType}:${rangingNum}-${lineName}`;
   line.userData = {
     type: lineType,
     name: lineName,
@@ -187,7 +188,7 @@ export const rangingFn = (
 
   const size = new CSS2DObject(div);
   const sizeType = "尺寸";
-  size.name = `${lineType}-${sizeType}-${rangingNum}`;
+  size.name = `${lineType}-${lineType}:${rangingNum}-${sizeType}`;
   size.userData = {
     type: lineType,
     name: sizeType,
@@ -230,7 +231,7 @@ export const drawRectWithFourPoints = (
   const path: THREE.CurvePath<THREE.Vector3> = new THREE.CurvePath();
   path.curves.push(line1, line2, line3, line4);
 
-  const geometry = new THREE.TubeGeometry(path.clone(), 300, 0.005);
+  const geometry = new THREE.TubeGeometry(path.clone(), 300, 0.01);
   const material = new THREE.MeshBasicMaterial({
     color: 0xffff00,
   });
@@ -260,9 +261,11 @@ export const createMarkLength = (
   const center = startPoint.clone().add(endPoint).divideScalar(2);
   size.position.copy(center);
   const eventType = "drag";
-  const type = "尺寸";
-  size.name = `${eventType}-剖面序号${pageNum}-${type}`;
+  const type = "剖面";
+  const name = "尺寸";
+  size.name = `${eventType}-剖面序号${pageNum}-${name}`;
   size.userData = {
+    name,
     pageNum,
     type,
     eventType,
@@ -289,9 +292,11 @@ export const createDirectionNorth = (
   const center = startPoint.clone().add(endPoint).divideScalar(2);
   pageNumber.position.copy(center);
   const eventType = "drag";
-  const type = "方向";
-  pageNumber.name = `${eventType}-剖面序号${pageNum}-${type}`;
+  const type = "剖面";
+  const name = "方向";
+  pageNumber.name = `${eventType}-剖面序号${pageNum}-${name}`;
   pageNumber.userData = {
+    name, 
     pageNum,
     type,
     eventType,
@@ -341,12 +346,14 @@ export const drewPlaneActiveBox = (C: THREE.Vector3, pageNum: number) => {
   const cube = new THREE.Mesh(geometry, material);
   cube.position.copy(C);
   const eventType = "drag";
-  const type = "选中";
-  cube.name = `${eventType}-剖面序号${pageNum}-${type}`;
+  const type = "剖面";
+  const name = "选中";
+  cube.name = `${eventType}-剖面序号${pageNum}-${name}`;
   cube.userData = {
-    pageNum,
-    type,
     eventType,
+    pageNum,
+    name,
+    type,
   };
   return cube;
 };
@@ -390,15 +397,17 @@ export const drewRect = (
 ) => {
   const points = createRectPoints(startPoint, endPoint);
   const eventType = "drag";
-  const type = "线";
+  const type = "剖面";
+  const name = "线";
   const rect = drawRectWithFourPoints(
     points,
-    `${eventType}-剖面序号${pageNum}-${type}`
+    `${eventType}-剖面序号${pageNum}-${name}`
   );
   rect.userData = {
-    pageNum,
-    type,
     eventType,
+    pageNum,
+    name,
+    type,
   };
 
   // 逆时针顺序解构出对应的4个顶点
