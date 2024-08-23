@@ -41,7 +41,7 @@ export class CreateTwin {
         this.width = window.innerWidth;
         this.height = window.innerHeight;
         this.camera = new THREE.PerspectiveCamera(45, this.width / this.height, 0.1, 8000);
-        this.camera.position.set(2, 2, 2);
+        this.camera.position.set(1.5, 1.5, 1.5);
         this.camera.lookAt(0, 0, 0);
 
         // 渲染器

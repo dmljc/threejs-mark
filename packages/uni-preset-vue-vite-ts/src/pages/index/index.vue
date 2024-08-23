@@ -14,10 +14,12 @@
   <div ref="webgl"></div>
 
   <wd-row class="footer" v-show="tabToolName === '标剖面'">
-    <wd-button hairline @click="onPlaneAttrShow">剖面属性</wd-button>
+    <wd-button :disabled="!selectPlane" @click="onDeletePlane">删除剖面</wd-button>
+    <wd-button hairline :disabled="!selectPlane" @click="onPlaneAttrShow">剖面属性</wd-button>
   </wd-row>
-  <wd-row class="footer" v-show="tabViewName === '已标注'">
-    <wd-button hairline @click="onHoleAttrShow">管孔属性</wd-button>
+  <wd-row class="footer" v-show="tabToolName === '标管孔'">
+    <wd-button :disabled="!selectHole" @click="onDeleteHole">删除管孔</wd-button>
+    <wd-button hairline :disabled="!selectHole" @click="onHoleAttrShow">管孔属性</wd-button>
   </wd-row>
 
   <!-- 剖面属性弹框 -->
@@ -59,7 +61,7 @@ import HoleAttrModal from "./HoleAttrModal.vue";
 const toast = useToast();
 
 const tabTools = ["浏览", "标剖面", "标管孔", "测距", "删除", "立视图"];
-const tabToolName = ref<string>("浏览");
+const tabToolName = ref<string>("标剖面");
 
 const tabViews = ["主视图", "左视图", "俯视图", "重置", "未标注", "已标注"];
 const tabViewName = ref<string>("重置");
@@ -70,8 +72,7 @@ const loader = new GLTFLoader();
 let clickNum: number = 0; // 记录点击次数
 let p1: THREE.Vector3 | null = null; // 起点坐标
 let p2: THREE.Vector3 | null = null; // 终点坐标
-let pageNum: number = 1; // 剖面的序号,先作废用planeNum字段
-const planeNum = ref<number>(0);
+let pageNum: number = 1; // 剖面的序号
 
 let sphereEndDragList: any = []; // 剖面终点小球列表
 
@@ -92,16 +93,16 @@ const isActivedPlane = ref<boolean>(false); // 剖面是否处于选中态
 // 管孔属性
 const holeAttrShow = ref<boolean>(false);
 const selectHole = ref();
-const isActivedHole = ref<boolean>(false); // 管孔是否处于选中态
+// const isActivedHole = ref<boolean>(false); // 管孔是否处于选中态
 
 // 管孔属性
 const hole = ref<number>(175); // 管孔直径尺寸
 let holeNum: number = +new Date(); // 管孔序号为了保证唯一使用时间戳
 let holeDragList: any = []; // 圆形管孔列表
-const holeGroup = new THREE.Group();
+// const holeGroup = new THREE.Group();
 
 // 测距组
-const rangingGroup = new THREE.Group();
+// const rangingGroup = new THREE.Group();
 let rangingSphereStart: any; // 起点小红点
 let rangingSphereEnd: any; // 终点小红点
 let rangingP1: THREE.Vector3 | undefined; // 测距起点坐标
@@ -269,6 +270,42 @@ const onPlaneAttrShow = () => {
   planeAttrShow.value = true;
 };
 
+// 删除剖面
+const onDeletePlane = () => {
+  let planeArr: THREE.Object3D<THREE.Object3DEventMap>[] = [];
+  const moName = selectPlane.value.name?.split("-")?.[1];
+
+  twin.scene.children.forEach((item) => {
+    // 剖面
+    item?.children?.forEach((el) => {
+      if (el.name?.includes(moName) && el.userData.type === "剖面") {
+        planeArr.push(el);
+      }
+    });
+
+    // 移除剖面
+    item.remove(...planeArr);
+  });
+};
+
+// 删除管孔
+const onDeleteHole = () => {
+  let holeArr: THREE.Object3D<THREE.Object3DEventMap>[] = []; // 管孔数组
+  const moName = selectHole.value.name?.split("-")?.[1];
+
+  twin.scene.children.forEach((item) => {
+    // 把管孔相关的放在一个数组
+    if (item.name.includes(moName)) {
+      holeArr.push(item);
+    }
+  });
+
+  // 移除管孔
+  if (selectHole.value.name.includes("圆形管孔")) {
+    twin.scene.remove(...holeArr);
+  }
+};
+
 const onHoleAttrShow = () => {
   holeAttrShow.value = true;
 };
@@ -301,23 +338,23 @@ const onDelete = (
   let planeArr: THREE.Object3D<THREE.Object3DEventMap>[] = []; // 剖面数组
   let holeArr: THREE.Object3D<THREE.Object3DEventMap>[] = []; // 管孔数组
   let rangingArr: THREE.Object3D<THREE.Object3DEventMap>[] = []; // 测距数组
-  const currentName = mesh.object.name?.split("-")?.[1];
+  const moName = mesh.object.name?.split("-")?.[1];
 
   twin.scene.children.forEach((item) => {
     // 剖面
     item?.children?.forEach((el) => {
-      if (el.name?.includes(currentName) && el.userData.type === "剖面") {
+      if (el.name?.includes(moName) && el.userData.type === "剖面") {
         planeArr.push(el);
       }
     });
 
     // 把管孔相关的放在一个数组
-    if (item.name.includes(currentName)) {
+    if (item.name.includes(moName)) {
       holeArr.push(item);
     }
 
     // 测距
-    if (item.name?.includes(currentName) && item.userData.type === "测距") {
+    if (item.name?.includes(moName) && item.userData.type === "测距") {
       rangingArr.push(item);
     }
 
@@ -338,6 +375,7 @@ const onDelete = (
 
 // 剖面的选中态切换
 const onPlaneActiveToggle = (mesh: any) => {
+  selectPlane.value = mesh?.object;
   // 当前选中的剖面序号，如：剖面序号1
   const moName = mesh.object.name.slice(5, 10);
 
@@ -376,6 +414,7 @@ const onPlaneActiveToggle = (mesh: any) => {
 const onHoleActiveToggle = (
   mesh: THREE.Intersection<THREE.Object3D<THREE.Object3DEventMap>>
 ) => {
+  selectHole.value = mesh?.object;
   const moName = mesh.object.name.split("-")[1];
 
   twin.scene.children?.forEach((item: any) => {
@@ -467,7 +506,6 @@ const onDrewRanging = (event: MouseEvent) => {
 const onClick = (event: MouseEvent) => {
   event.preventDefault();
   const { mesh } = getRayCasterPoint(event, twin);
-  selectPlane.value = mesh?.object;
 
   // // 剖面选中态
   // if (tabToolName.value !== "删除" && (mesh?.object?.name?.includes("起点坐标") || mesh?.object?.name?.includes("终点坐标"))){
@@ -532,12 +570,12 @@ const onClosePlaneAttr = () => {
 
 const onCloseHoleAttr = (data: { rotate: number }) => {
   holeAttrShow.value = false;
-  const name = selectPlane.value?.name?.split("-")[1];
+  const name = selectHole.value?.name?.split("-")[1];
   // 角度转弧度
   const radRotate = (data.rotate / 180) * Math.PI;
-  selectPlane.value.rotation.y += radRotate;
+  selectHole.value.rotation.y += radRotate;
 
-  // 通过递归遍历 找到 selectPlane 中间的电缆，也旋转同样的角度
+  // 通过递归遍历 找到 selectHole 中间的电缆，也旋转同样的角度
   twin.scene.traverse((obj) => {
     if (obj?.name?.includes(name) && obj?.userData?.name === "电缆") {
       obj.rotation.y += radRotate;
@@ -554,7 +592,7 @@ const onMouseMove = (event: MouseEvent) => {
   removePlanes(twin);
   if (p1 && point) {
     sphereEnd = drawSphere(point, "终点坐标");
-    const { rect, sizeAC, sizeDB, sizeAD, sizeCB, cube } = drewRect(
+    const { rect, sizeAC, sizeDB, sizeAD, sizeCB } = drewRect(
       p1,
       point,
       pageNum

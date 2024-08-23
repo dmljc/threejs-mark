@@ -338,25 +338,25 @@ export const css2RendererStyle = (twin: CreateTwin) => {
 };
 
 // 创建剖面右上角点击选中的立方体
-export const drewPlaneActiveBox = (C: THREE.Vector3, pageNum: number) => {
-  const geometry = new THREE.BoxGeometry(0.02, 0.08, 0.1);
-  const material = new THREE.MeshBasicMaterial({
-    color: 0xffff00,
-  });
-  const cube = new THREE.Mesh(geometry, material);
-  cube.position.copy(C);
-  const eventType = "drag";
-  const type = "剖面";
-  const name = "选中";
-  cube.name = `${eventType}-剖面序号${pageNum}-${name}`;
-  cube.userData = {
-    eventType,
-    pageNum,
-    name,
-    type,
-  };
-  return cube;
-};
+// export const drewPlaneActiveBox = (C: THREE.Vector3, pageNum: number) => {
+//   const geometry = new THREE.BoxGeometry(0.02, 0.08, 0.1);
+//   const material = new THREE.MeshBasicMaterial({
+//     color: 0xffff00,
+//   });
+//   const cube = new THREE.Mesh(geometry, material);
+//   cube.position.copy(C);
+//   const eventType = "drag";
+//   const type = "剖面";
+//   const name = "选中";
+//   cube.name = `${eventType}-剖面序号${pageNum}-${name}`;
+//   cube.userData = {
+//     eventType,
+//     pageNum,
+//     name,
+//     type,
+//   };
+//   return cube;
+// };
 
 // 创建圆形管孔内的电缆
 export const drewHoleCable = (
@@ -428,9 +428,6 @@ export const drewRect = (
   const sizeAD = createMarkLength(A, D, depth, pageNum);
   const sizeCB = createMarkLength(C, B, depth, pageNum);
 
-  // 方向正北
-  const cube = drewPlaneActiveBox(C, pageNum); // 立方体
-
   return {
     length,
     width,
@@ -440,7 +437,6 @@ export const drewRect = (
     sizeDB,
     sizeAD,
     sizeCB,
-    cube,
   };
 };
 /*
@@ -649,11 +645,14 @@ export const removePlanes = (twin: CreateTwin) => {
         groupedByName[sName].push(el);
       });
 
+
+      console.log('groupedByName',groupedByName)
+
       // 从同一个数组中删除最后一次滚动之前的数据，保留最后一次拖拽的剖面标注数据
       for (const key in groupedByName) {
         if (Object.prototype.hasOwnProperty.call(groupedByName, key)) {
           const record = groupedByName[key];
-          const startRecord = record.slice(0, record.length - 8);
+          const startRecord = record.slice(0, record.length - 7);
           item.remove(...startRecord);
         }
       }
