@@ -117,10 +117,6 @@ const { holeDragedList } = UseHoleDrag({ twin, holeDragList, hole: hole.value, h
 // 切换工具栏
 const onTabToolsChange = (item: { name: string; index: number }) => {
   tabToolName.value = item.name;
-  // if (item.name === "删除") {
-  //   isDeletePlane.value = !isDeletePlane.value;
-  // }
-
   twin.scene.traverse((obj) => {
     const udName = obj.userData.name;
     if (item.name === '浏览' && udName && udName !== 'Node' && tabViewName.value === '未标注') {
@@ -203,14 +199,7 @@ const onDrewPlane = (event: MouseEvent) => {
     if (!point) return;
     p1 = point;
     sphereStart = drawSphere(point, "起点坐标");
-    const eventType = "dblclick";
-    const type = "剖面组";
-    planeGroup.name = `${eventType}-${type}${pageNum}`;
-    planeGroup.userData = {
-      type,
-      pageNum,
-      eventType,
-    };
+
     planeGroup.add(sphereStart);
     twin.scene.add(planeGroup);
   } else {
@@ -231,14 +220,14 @@ const onDrewPlane = (event: MouseEvent) => {
       } = drewRect(p1, point, pageNum);
       sphereEnd = drawSphere(point, "终点坐标");
       planeGroup.add(
-      sizeAC,
-      sizeDB,
-      sizeAD,
-      sizeCB,
-      rect,
-      sphereStart,
-      sphereEnd
-      ); 
+        sizeAC,
+        sizeDB,
+        sizeAD,
+        sizeCB,
+        rect,
+        sphereStart,
+        sphereEnd
+      );
 
       twin.scene.add(planeGroup);
 
@@ -304,6 +293,24 @@ const onDeleteHole = () => {
   }
 };
 
+// 删除测距
+const onDeleteRanging = (mesh) => {
+  let rangingArr: THREE.Object3D<THREE.Object3DEventMap>[] = []; // 测距数组
+
+  const moName = mesh.object.name?.split("-")?.[1];
+
+  twin.scene.children?.forEach((item) => {
+    if (item.name?.includes(moName) && item.userData.type === "测距") {
+      rangingArr.push(item);
+    }
+  });
+
+  // 移除测距
+  if (mesh.object.name.includes("测距")) {
+    twin.scene.remove(...rangingArr);
+  }
+};
+
 const onHoleAttrShow = () => {
   holeAttrShow.value = true;
 };
@@ -330,46 +337,46 @@ const onDrewHole = (event: MouseEvent) => {
 };
 
 // 删除
-const onDelete = (
-  mesh: THREE.Intersection<THREE.Object3D<THREE.Object3DEventMap>>
-) => {
-  let planeArr: THREE.Object3D<THREE.Object3DEventMap>[] = []; // 剖面数组
-  let holeArr: THREE.Object3D<THREE.Object3DEventMap>[] = []; // 管孔数组
-  let rangingArr: THREE.Object3D<THREE.Object3DEventMap>[] = []; // 测距数组
-  const moName = mesh.object.name?.split("-")?.[1];
+// const onDelete = (
+//   mesh: THREE.Intersection<THREE.Object3D<THREE.Object3DEventMap>>
+// ) => {
+//   let planeArr: THREE.Object3D<THREE.Object3DEventMap>[] = []; // 剖面数组
+//   let holeArr: THREE.Object3D<THREE.Object3DEventMap>[] = []; // 管孔数组
+//   let rangingArr: THREE.Object3D<THREE.Object3DEventMap>[] = []; // 测距数组
+//   const moName = mesh.object.name?.split("-")?.[1];
 
-  twin.scene.children.forEach((item) => {
-    // 剖面
-    item?.children?.forEach((el) => {
-      if (el.name?.includes(moName) && el.userData.type === "剖面") {
-        planeArr.push(el);
-      }
-    });
+//   twin.scene.children.forEach((item) => {
+//     // 剖面
+//     item?.children?.forEach((el) => {
+//       if (el.name?.includes(moName) && el.userData.type === "剖面") {
+//         planeArr.push(el);
+//       }
+//     });
 
-    // 把管孔相关的放在一个数组
-    if (item.name.includes(moName)) {
-      holeArr.push(item);
-    }
+//     // 把管孔相关的放在一个数组
+//     if (item.name.includes(moName)) {
+//       holeArr.push(item);
+//     }
 
-    // 测距
-    if (item.name?.includes(moName) && item.userData.type === "测距") {
-      rangingArr.push(item);
-    }
+//     // 测距
+//     if (item.name?.includes(moName) && item.userData.type === "测距") {
+//       rangingArr.push(item);
+//     }
 
-    // 移除剖面
-    item.remove(...planeArr);
-  });
+//     // 移除剖面
+//     item.remove(...planeArr);
+//   });
 
-  // 移除管孔
-  if (mesh.object.name.includes("圆形管孔")) {
-    twin.scene.remove(...holeArr);
-  }
+//   // 移除管孔
+//   if (mesh.object.name.includes("圆形管孔")) {
+//     twin.scene.remove(...holeArr);
+//   }
 
-  // 移除测距
-  if (mesh.object.name.includes("测距")) {
-    twin.scene.remove(...rangingArr);
-  }
-};
+//   // 移除测距
+//   if (mesh.object.name.includes("测距")) {
+//     twin.scene.remove(...rangingArr);
+//   }
+// };
 
 // 剖面的选中态切换
 const onPlaneActiveToggle = (mesh: any) => {
@@ -389,18 +396,11 @@ const onPlaneActiveToggle = (mesh: any) => {
           ele.material?.color.set(0x00ffff);
           // 把选中的当前剖面的'选中块'变为浅蓝色
         }
-        // else if (["选中"].includes(ele.userData.name)) {
-        //   ele.material?.color.set(0x00ffff);
-        // }
       } else {
         // 其他剖面的选中状态
         if (["线"].includes(ele.userData.name)) {
           ele.material?.color.set(0xffff00);
-        }
-        // else if (["选中"].includes(ele.userData.name)) {
-        //   ele.material?.color.set(0xffff00);
-        // } 
-        else if (["方向"].includes(ele.userData.name)) {
+        } else if (["方向"].includes(ele.userData.name)) {
           planeGroup.remove(ele);
         }
       }
@@ -443,8 +443,6 @@ const rangingClick = (event: MouseEvent, rangingNum: number, _name: string, num?
     toast.warning("请点击模型非空区域");
     return;
   }
-  // const point = rayCasterPoint(event);
-  // if (!point) return;
 
   const sphere = createSphere(point, twin.camera, num);
   if (!sphere) return;
@@ -456,8 +454,7 @@ const rangingClick = (event: MouseEvent, rangingNum: number, _name: string, num?
     name,
     rangingNum,
   };
-  // rangingGroup.add(sphere);
-  // twin.scene.add(rangingGroup);
+
   return {
     point,
     sphere,
@@ -471,14 +468,10 @@ const onDrewRanging = (event: MouseEvent) => {
     rangingNum = +new Date();
     const { point, sphere } = rangingClick(event, rangingNum, "起", 200) as any;
     rangingP1 = point;
-    // rangingSphereStart = sphere;
-    // rangingGroup.add(rangingSphereStart);
     twin.scene.add(sphere);
   } else {
-    const { point, sphere } = rangingClick(event, rangingNum, "终") as any;
+    const { point, sphere } = rangingClick(event, rangingNum, "终", 200) as any;
     rangingP2 = point;
-    // rangingSphereEnd = sphere;
-    // rangingGroup.add(rangingSphereEnd);
     twin.scene.add(sphere);
 
     if (rangingP1 && rangingP2) {
@@ -505,18 +498,6 @@ const onClick = (event: MouseEvent) => {
   event.preventDefault();
   const { mesh } = getRayCasterPoint(event, twin);
 
-  // // 剖面选中态
-  // if (tabToolName.value !== "删除" && (mesh?.object?.name?.includes("起点坐标") || mesh?.object?.name?.includes("终点坐标"))){
-  //   onPlaneActiveToggle(mesh);
-  //   return;
-  // }
-
-  // 管孔的选中态
-  // if (tabToolName.value !== "删除" && mesh?.object?.name?.includes("管孔")) {
-  //   onHoleActiveToggle(mesh);
-  //   return;
-  // }
-
   if (tabToolName.value === "标剖面") {
     // 剖面选中态
     if (mesh?.object?.name?.includes("起点坐标") || mesh?.object?.name?.includes("终点坐标")) {
@@ -534,12 +515,13 @@ const onClick = (event: MouseEvent) => {
     // 圆形管孔标注
     onDrewHole(event);
   } else if (tabToolName.value === "测距") {
+    if (mesh?.object?.name?.includes("终点坐标")) {
+      onDeleteRanging(mesh);
+      return;
+    }
     // 测距
     onDrewRanging(event);
-  } 
-  // else if (tabToolName.value === "删除") {
-  //   onDelete(mesh);
-  // }
+  }
 
   // 最后记得重新渲染 canvas 画布
   css2RendererStyle(twin);
@@ -587,27 +569,10 @@ const onMouseMove = (event: MouseEvent) => {
   const point = rayCasterPoint(event);
   if (!point) return;
 
-  // 移除实时创建的网格模型
-  removePlanes(twin);
   if (p1 && point) {
     sphereEnd = drawSphere(point, "终点坐标");
-    const { rect, sizeAC, sizeDB, sizeAD, sizeCB } = drewRect(
-      p1,
-      point,
-      pageNum
-    );
 
-    planeGroup.add(
-      sizeAC,
-      sizeDB,
-      sizeAD,
-      sizeCB,
-      rect,
-      sphereStart,
-      sphereEnd
-    );
-    planeGroup.name = "剖面组";
-    twin.scene.add(planeGroup);
+    planeGroup.add(sphereEnd);
     sphereEndDragList.push(sphereEnd);
   }
 };
