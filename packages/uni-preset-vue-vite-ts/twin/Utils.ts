@@ -645,9 +645,6 @@ export const removePlanes = (twin: CreateTwin) => {
         groupedByName[sName].push(el);
       });
 
-
-      console.log('groupedByName',groupedByName)
-
       // 从同一个数组中删除最后一次滚动之前的数据，保留最后一次拖拽的剖面标注数据
       for (const key in groupedByName) {
         if (Object.prototype.hasOwnProperty.call(groupedByName, key)) {

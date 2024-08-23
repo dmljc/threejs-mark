@@ -1,32 +1,17 @@
 /* eslint-disable prefer-const */
-import * as THREE from 'three';
-import { DragControls } from 'three/examples/jsm/controls/DragControls.js';
-import { drewRect, createSphere } from'../../../twin';
+import * as THREE from "three";
+import { DragControls } from "three/examples/jsm/controls/DragControls.js";
+import { drewRect, createSphere } from "../../../twin";
 
 const usePlaneDrag = (props: any) => {
     const { twin, sphereEndDragList, planeParamsList } = props;
 
-    // let isHoverOn: boolean = false; // 是否处于hover 状态
-    // let hoverPlane: THREE.Object3D<THREE.Object3DEventMap>; // 当前处于hover 状态的剖面
-
     const groupDrag = new THREE.Group();
-    const dragControls = new DragControls(sphereEndDragList, twin.camera, twin.renderer.domElement);
-
-    // 创建右键菜单的DOM结构
-    const rightMenu = document.createElement('div');
-    rightMenu.style.position = 'absolute';
-    rightMenu.style.display = 'none';
-    rightMenu.innerHTML = `<button id='planedel'>删除剖面</button>`;
-    document.body.appendChild(rightMenu);
-
-    // 监听鼠标右键事件
-    // const onContextMenu = (event: any) => {
-    //     if (!planeList.length) return;
-    //     // 将菜单显示在鼠标位置
-    //     rightMenu.style.top = event.clientY + 'px';
-    //     rightMenu.style.left = event.clientX + 'px';
-    //     rightMenu.style.display = 'block';
-    // };
+  const dragControls = new DragControls(
+    sphereEndDragList,
+    twin.camera,
+    twin.renderer.domElement
+  );
 
     const onHandle = (e: any) => {
         const params = planeParamsList?.filter((el: any) => {
@@ -42,24 +27,26 @@ const usePlaneDrag = (props: any) => {
         const endPoint = e.object.position;
 
         const dragGroup = twin.scene.children.find((item: { name: string }) =>
-            item.name.startsWith('drag')
+      item.name.startsWith("drag")
         );
 
         // 修改dblclick 开头的剖面组名称
         if (dragGroup) {
             twin.scene.children.forEach((el: { name: string }) => {
                 const _pageNum = dragGroup.name.slice(-1);
-                if (el.name.startsWith('dblclick')) {
+        if (el.name.startsWith("dblclick")) {
                     el.name = el.name.slice(0, -1) + _pageNum;
                 }
             });
         }
         // 移除 children 为空的 group 对象。不放在twin.scene.traverse中移除是因为threejs不允许修改。
-        twin.scene.children.forEach((item: { isGroup: any; children: string | any[] }) => {
+    twin.scene.children.forEach(
+      (item: { isGroup: any; children: string | any[] }) => {
             if (item.isGroup && !item.children.length) {
                 twin.scene.remove(item);
             }
-        });
+      }
+    );
         // 移除实时创建的网格模型
         twin.scene.traverse((item: any) => {
             if (!item.isGroup) return;
@@ -96,8 +83,6 @@ const usePlaneDrag = (props: any) => {
             sizeDB: _sizeDB,
             sizeAD: _sizeAD,
             sizeCB: _sizeCB,
-            cube,
-            // pageNumber: _pageNumber
         } = drewRect(p1, endPoint, pageNum);
 
         sphereStart = createSphere(p1, twin.camera);
@@ -111,22 +96,26 @@ const usePlaneDrag = (props: any) => {
             _sizeDB,
             _sizeAD,
             _sizeCB,
-            // _pageNumber,
-            cube,
             sphereStart,
             sphereEnd
         );
         sphereEndDragList.push(sphereEnd);
-        const eventType = 'drag';
+    const eventType = "drag";
         groupDrag.name = `${eventType}-剖面组${pageNum}`;
         groupDrag.userData = {
             pageNum,
-            eventType
+      eventType,
         };
         twin.scene.add(groupDrag);
 
         planeParamsList.forEach(
-            (ele: { p2: any; width: number; pageNum: number; length: number; depth: number }) => {
+      (ele: {
+        p2: any;
+        width: number;
+        pageNum: number;
+        length: number;
+        depth: number;
+      }) => {
                 if (pageNum === ele.pageNum) {
                     ele.length = length;
                     ele.depth = depth;
@@ -138,51 +127,15 @@ const usePlaneDrag = (props: any) => {
     };
 
     // 拖拽中
-    dragControls.addEventListener('drag', (e) => {
+  dragControls.addEventListener("drag", (e) => {
         twin.controls.enabled = false;
         onHandle(e);
     });
 
     // 拖拽结束
-    dragControls.addEventListener('dragend', () => {
+  dragControls.addEventListener("dragend", () => {
         twin.controls.enabled = true;
     });
-
-    // dragControls.addEventListener('hoveron', (e) => {
-    //     hoverPlane = e.object;
-    //     isHoverOn = false;
-    // });
-
-    // twin.renderer.domElement.addEventListener('contextmenu', (event: any) => {
-    //     isHoverOn && onContextMenu(event);
-    // });
-
-    // 删除剖面
-    // document.getElementById('planedel')?.addEventListener('click', (e) => {
-    //     console.log(
-    //         'start----planeGroup.children:',
-    //         planeGroup.children.length,
-    //         planeGroup.children
-    //     );
-    //     const _pageNum = hoverPlane?.name.slice(9, 10);
-    //     const index = planeGroup.children.findIndex((item: { name: string | string[] }) => {
-    //         if (item.name.includes(`drag-剖面序号${_pageNum}`)) {
-    //             return item;
-    //         }
-    //     });
-
-    //     if (index === -1) {
-    //         return console.log('没有找到对应的元素');
-    //     }
-    //     planeGroup.children.splice(index, 8);
-    //     rightMenu.style.display = 'none';
-    //     console.log('end----planeGroup.children:', planeGroup.children.length, planeGroup.children);
-    // });
-
-    // dragControls.addEventListener('hoveroff', () => {
-    //     isHoverOn = false;
-    //     rightMenu.style.display = 'none';
-    // });
 
     return {};
 };

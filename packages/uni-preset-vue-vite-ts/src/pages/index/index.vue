@@ -228,19 +228,17 @@ const onDrewPlane = (event: MouseEvent) => {
         sizeDB,
         sizeAD,
         sizeCB,
-        cube,
       } = drewRect(p1, point, pageNum);
       sphereEnd = drawSphere(point, "终点坐标");
       planeGroup.add(
-        sizeAC,
-        sizeDB,
-        sizeAD,
-        sizeCB,
-        rect,
-        sphereStart,
-        sphereEnd
-        // cube
-      );
+      sizeAC,
+      sizeDB,
+      sizeAD,
+      sizeCB,
+      rect,
+      sphereStart,
+      sphereEnd
+      ); 
 
       twin.scene.add(planeGroup);
 
@@ -390,7 +388,7 @@ const onPlaneActiveToggle = (mesh: any) => {
         if (["线"].includes(ele.userData.name)) {
           ele.material?.color.set(0x00ffff);
           // 把选中的当前剖面的'选中块'变为浅蓝色
-        } 
+        }
         // else if (["选中"].includes(ele.userData.name)) {
         //   ele.material?.color.set(0x00ffff);
         // }
@@ -398,7 +396,7 @@ const onPlaneActiveToggle = (mesh: any) => {
         // 其他剖面的选中状态
         if (["线"].includes(ele.userData.name)) {
           ele.material?.color.set(0xffff00);
-        } 
+        }
         // else if (["选中"].includes(ele.userData.name)) {
         //   ele.material?.color.set(0xffff00);
         // } 
@@ -606,7 +604,6 @@ const onMouseMove = (event: MouseEvent) => {
       rect,
       sphereStart,
       sphereEnd
-      // cube
     );
     planeGroup.name = "剖面组";
     twin.scene.add(planeGroup);
