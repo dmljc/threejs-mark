@@ -60,7 +60,7 @@ import HoleAttrModal from "./HoleAttrModal.vue";
 
 const toast = useToast();
 
-const tabTools = ["浏览", "标剖面", "标管孔", "测距", "删除", "立视图"];
+const tabTools = ["浏览", "标剖面", "标管孔", "测距", "立视图"];
 const tabToolName = ref<string>("标剖面");
 
 const tabViews = ["主视图", "左视图", "俯视图", "重置", "未标注", "已标注"];
@@ -117,9 +117,9 @@ const { holeDragedList } = UseHoleDrag({ twin, holeDragList, hole: hole.value, h
 // 切换工具栏
 const onTabToolsChange = (item: { name: string; index: number }) => {
   tabToolName.value = item.name;
-  if (item.name === "删除") {
-    isDeletePlane.value = !isDeletePlane.value;
-  }
+  // if (item.name === "删除") {
+  //   isDeletePlane.value = !isDeletePlane.value;
+  // }
 
   twin.scene.traverse((obj) => {
     const udName = obj.userData.name;
@@ -536,9 +536,10 @@ const onClick = (event: MouseEvent) => {
   } else if (tabToolName.value === "测距") {
     // 测距
     onDrewRanging(event);
-  } else if (tabToolName.value === "删除") {
-    onDelete(mesh);
-  }
+  } 
+  // else if (tabToolName.value === "删除") {
+  //   onDelete(mesh);
+  // }
 
   // 最后记得重新渲染 canvas 画布
   css2RendererStyle(twin);
