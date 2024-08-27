@@ -39,13 +39,10 @@ const model = reactive<Model>({
     value2: "正北",
 });
 
-const isSubmit = ref<boolean>(false)
-
 const emit = defineEmits(["close"]);
 
 const handleClose = () => {
-    emit("close", model);
-    isSubmit.value = true;
+    emit("close", 'cancel');
 }
 
 
@@ -58,7 +55,7 @@ const handleSubmit = () => {
         .validate()
         .then(({ valid, errors }) => {
             if (valid) {
-
+                emit("close", 'submit');
             }
         })
         .catch((error) => {

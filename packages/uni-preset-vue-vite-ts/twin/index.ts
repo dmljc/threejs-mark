@@ -16,7 +16,7 @@ export {
     average,
     box3IsContainsBox,
     box3IsContainsPoint,
-    removePlanes,
+    // removePlanes,
     transform3DCoordsTo2D,
     rangingFn,
     createDirectionNorth,

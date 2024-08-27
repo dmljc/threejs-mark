@@ -47,7 +47,7 @@ import {
   createHoleSize,
   box3IsContainsBox,
   box3IsContainsPoint,
-  removePlanes,
+  // removePlanes,
   rangingFn,
   createDirectionNorth,
 } from "../../../twin";
@@ -80,15 +80,15 @@ const planeGroup = new THREE.Group(); // 一个独立的剖面标注组
 
 let sphereStart: any; // 起点小红点
 let sphereEnd: any; // 终点小红点
-const isDeletePlane = ref<boolean>(false); // 删除剖面标注
+// const isDeletePlane = ref<boolean>(false); // 删除剖面标注
 
 const planeParamsList: any = []; // 剖面参数列表
-const holeParamsList = []; // 管孔参数列表
+// const holeParamsList = []; // 管孔参数列表
 
 // 剖面属性
 const planeAttrShow = ref<boolean>(false);
 const selectPlane = ref();
-const isActivedPlane = ref<boolean>(false); // 剖面是否处于选中态
+// const isActivedPlane = ref<boolean>(false); // 剖面是否处于选中态
 
 // 管孔属性
 const holeAttrShow = ref<boolean>(false);
@@ -111,8 +111,7 @@ let rangingClickNum: number = 0; // 测距点击次数
 let rangingNum: number; // 测距序号为了保证唯一使用时间戳
 
 UsePlaneDrag({ twin, sphereEndDragList, planeParamsList });
-
-const { holeDragedList } = UseHoleDrag({ twin, holeDragList, hole: hole.value, holeNum });
+// UseHoleDrag({ twin, holeDragList, hole: hole.value, selectHole });
 
 // 切换工具栏
 const onTabToolsChange = (item: { name: string; index: number }) => {
@@ -139,6 +138,7 @@ const onTabViewsChange = (item: { name: string }) => {
   };
 
   if (item?.name && !["未标注", "已标注"].includes(item.name)) {
+    // @ts-ignore
     twin.camera.position.set(...viewMap[item.name]);
   }
 
@@ -228,6 +228,9 @@ const onDrewPlane = (event: MouseEvent) => {
         sphereStart,
         sphereEnd
       );
+      // 剖面创建完成即处于选中状态
+      const { mesh } = getRayCasterPoint(event, twin);
+      onPlaneActiveToggle(mesh);
 
       twin.scene.add(planeGroup);
 
@@ -294,7 +297,7 @@ const onDeleteHole = () => {
 };
 
 // 删除测距
-const onDeleteRanging = (mesh) => {
+const onDeleteRanging = (mesh: THREE.Intersection<THREE.Object3D<THREE.Object3DEventMap>>) => {
   let rangingArr: THREE.Object3D<THREE.Object3DEventMap>[] = []; // 测距数组
 
   const moName = mesh.object.name?.split("-")?.[1];
@@ -326,57 +329,8 @@ const onDrewHole = (event: MouseEvent) => {
   twin.scene.add(torus, circle, holeSize);
   holeDragList.push(torus);
 
-  // console.log('circle.name', circle.name);
-  // const holeParams = {
-  //   hole: hole.value,
-  //   point,
-  //   mesh: ellipse,
-  // };
-
-  // holeParamsList.push(cloneDeep(holeParams)); // 深拷贝之后就不能修改管孔颜色了
+  onHoleActiveToggle(torus);
 };
-
-// 删除
-// const onDelete = (
-//   mesh: THREE.Intersection<THREE.Object3D<THREE.Object3DEventMap>>
-// ) => {
-//   let planeArr: THREE.Object3D<THREE.Object3DEventMap>[] = []; // 剖面数组
-//   let holeArr: THREE.Object3D<THREE.Object3DEventMap>[] = []; // 管孔数组
-//   let rangingArr: THREE.Object3D<THREE.Object3DEventMap>[] = []; // 测距数组
-//   const moName = mesh.object.name?.split("-")?.[1];
-
-//   twin.scene.children.forEach((item) => {
-//     // 剖面
-//     item?.children?.forEach((el) => {
-//       if (el.name?.includes(moName) && el.userData.type === "剖面") {
-//         planeArr.push(el);
-//       }
-//     });
-
-//     // 把管孔相关的放在一个数组
-//     if (item.name.includes(moName)) {
-//       holeArr.push(item);
-//     }
-
-//     // 测距
-//     if (item.name?.includes(moName) && item.userData.type === "测距") {
-//       rangingArr.push(item);
-//     }
-
-//     // 移除剖面
-//     item.remove(...planeArr);
-//   });
-
-//   // 移除管孔
-//   if (mesh.object.name.includes("圆形管孔")) {
-//     twin.scene.remove(...holeArr);
-//   }
-
-//   // 移除测距
-//   if (mesh.object.name.includes("测距")) {
-//     twin.scene.remove(...rangingArr);
-//   }
-// };
 
 // 剖面的选中态切换
 const onPlaneActiveToggle = (mesh: any) => {
@@ -388,20 +342,16 @@ const onPlaneActiveToggle = (mesh: any) => {
   twin.scene.children?.forEach((item: any) => {
     if (!item.isGroup) return;
     item.children?.forEach((ele: any) => {
-      isActivedPlane.value = !isActivedPlane.value;
       // 当前剖面的选中状态
       if (ele.name.slice(5, 10) === moName) {
         // 把选中的当前剖面的线变为浅蓝色
         if (["线"].includes(ele.userData.name)) {
           ele.material?.color.set(0x00ffff);
-          // 把选中的当前剖面的'选中块'变为浅蓝色
         }
       } else {
         // 其他剖面的选中状态
         if (["线"].includes(ele.userData.name)) {
           ele.material?.color.set(0xffff00);
-        } else if (["方向"].includes(ele.userData.name)) {
-          planeGroup.remove(ele);
         }
       }
     });
@@ -409,22 +359,18 @@ const onPlaneActiveToggle = (mesh: any) => {
 };
 
 // 管孔选中态切换(仅点击管孔的时候允许切换颜色)
-const onHoleActiveToggle = (
-  mesh: THREE.Intersection<THREE.Object3D<THREE.Object3DEventMap>>
-) => {
-  selectHole.value = mesh?.object;
-  const moName = mesh.object.name.split("-")[1];
+const onHoleActiveToggle = (mesh: THREE.Intersection<THREE.Object3D<THREE.Object3DEventMap>> | THREE.Mesh<THREE.TorusGeometry, THREE.MeshBasicMaterial, THREE.Object3DEventMap>) => {
+  selectHole.value = mesh.object || mesh;
+  const moName = (mesh.object || mesh)?.name.split("-")[1];
 
   twin.scene.children?.forEach((item: any) => {
     // 排除 平行光、环境光、坐标轴和scanner模型
-    const { isDirectionalLight, isAmbientLight, isLineSegments, name } = item;
-    if (
-      isDirectionalLight ||
-      isAmbientLight ||
-      isLineSegments ||
-      name === "Node"
-    )
-      return;
+    const dLight = item.isDirectionalLight;
+    const aLight = item.isAmbientLight;
+    const lSegment = item.isLineSegments;
+    const name = item.name;
+
+    if (dLight || aLight || lSegment || name === "Node") return;
 
     if (item.userData.name === "管孔" && item.name.split("-")[1] === moName) {
       // 当前管孔设置为选中色
@@ -528,29 +474,43 @@ const onClick = (event: MouseEvent) => {
 };
 
 // 关闭剖面属性弹框
-const onClosePlaneAttr = () => {
-  let startPoint, endPoint;
+const onClosePlaneAttr = (type: string) => {
+  if (type === 'cancel') {
+    planeAttrShow.value = false;
+    return;
+  }
 
-  planeAttrShow.value = false;
+  let startPoint, endPoint;
   const _pageNum = selectPlane.value?.name?.slice(9, 10);
 
-  twin.scene.traverse((obj) => {
-    if (obj.name.includes(`剖面序号${_pageNum}-起点坐标`)) {
-      startPoint = obj.position;
-    } else if (obj.name.includes(`剖面序号${_pageNum}-终点坐标`)) {
-      endPoint = obj.position;
-    }
+  twin.scene.children?.forEach((obj) => {
+    obj.children?.forEach((ele) => {
+      if (ele.name.includes(`剖面序号${_pageNum}-起点坐标`)) {
+        startPoint = ele.position;
+      } else if (ele.name.includes(`剖面序号${_pageNum}-终点坐标`)) {
+        endPoint = ele.position;
+      } else if (ele.name.includes('方向')) {
+        planeGroup.remove(ele);
+      }
+    });
   });
 
   if (startPoint && endPoint) {
-    const mesh = createDirectionNorth(startPoint, endPoint, _pageNum);
-    planeGroup.add(mesh);
+    const north = createDirectionNorth(startPoint, endPoint, _pageNum);
+    planeGroup.add(north);
     twin.scene.add(planeGroup);
   }
+
+  planeAttrShow.value = false;
 };
 
 const onCloseHoleAttr = (data: { rotate: number }) => {
-  holeAttrShow.value = false;
+  // 单纯的关闭弹框
+  if (!data) {
+    holeAttrShow.value = false;
+    return;
+  }
+  // 保存之后关闭弹框
   const name = selectHole.value?.name?.split("-")[1];
   // 角度转弧度
   const radRotate = (data.rotate / 180) * Math.PI;
@@ -562,6 +522,7 @@ const onCloseHoleAttr = (data: { rotate: number }) => {
       obj.rotation.y += radRotate;
     }
   });
+  holeAttrShow.value = false;
 };
 
 const onMouseMove = (event: MouseEvent) => {
@@ -604,7 +565,7 @@ const destroyGlobalVariable = () => {
 
   rangingSphereStart = null;
   rangingSphereEnd = null;
-};
+  };
 
 onUnmounted(() => {
   destroyGlobalVariable();

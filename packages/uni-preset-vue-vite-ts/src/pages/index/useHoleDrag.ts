@@ -1,20 +1,18 @@
-import { ref } from "vue";
+import { onUnmounted } from "vue";
 import * as THREE from "three";
 import { DragControls } from "three/examples/jsm/controls/DragControls.js";
 
 interface Props {
   twin: any;
   holeDragList: any;
-  holeNum: number;
+  selectHole: any;
   hole: number;
 }
 
 const useHoleDrag = (props: Props) => {
-  const { twin, holeDragList, holeNum, hole } = props;
+  const { twin, holeDragList, hole, selectHole } = props;
 
-  const holeDragedList = ref([]); // 拖拽后更新坐标数据之后的管孔列表
-
-  const dragControls = new DragControls(
+  let dragControls: DragControls | null = new DragControls(
     holeDragList,
     twin.camera,
     twin.renderer.domElement
@@ -47,27 +45,49 @@ const useHoleDrag = (props: Props) => {
     };
   };
 
-  // 显示管孔尺寸
-  // const onHandle = (e: any) => {
-  //   getCurrentHoleCable(e.object.name);
+  // 管孔选中态切换(仅点击管孔的时候允许切换颜色)
+  const onHoleActiveToggle = (
+    mesh:
+      | THREE.Intersection<THREE.Object3D<THREE.Object3DEventMap>>
+      | THREE.Mesh<
+          THREE.TorusGeometry,
+          THREE.MeshBasicMaterial,
+          THREE.Object3DEventMap
+        >
+  ) => {
+    selectHole.value = mesh.object || mesh;
+    const moName = (mesh.object || mesh)?.name.split("-")[1];
 
-  //   // 对拖拽的管孔列表遍历获取最新的坐标数据
-  //   // const result = holeDragList.map((item: { uuid: string }) => {
-  //   //     if (item.uuid === e.object.uuid) {
-  //   //         return e.object;
-  //   //     } else {
-  //   //         return item;
-  //   //     }
-  //   // });
+    twin.scene.children.forEach((item: any) => {
+      // 排除 平行光、环境光、坐标轴和scanner模型
+      const dLight = item.isDirectionalLight;
+      const aLight = item.isAmbientLight;
+      const lSegment = item.isLineSegments;
+      const name = item.name;
 
-  //   // holeDragedList.value = result;
-  // };
+      if (dLight || aLight || lSegment || name === "Node") return;
+
+      if (item.userData.name === "管孔" && item.name.split("-")[1] === moName) {
+        // 当前管孔设置为选中色
+        item.material?.color.set(0x00ffff);
+      } else if (item.userData.name === "管孔") {
+        // 其他管孔颜色设置为默认色
+        item.material?.color.set(0xffff00);
+      }
+    });
+  };
+
+  dragControls.addEventListener("dragstart", (e) => {
+    twin.controls.enabled = false;
+    selectHole.value = e.object;
+    onHoleActiveToggle(e);
+  });
 
   // 拖拽中
   dragControls.addEventListener("drag", (e) => {
     twin.controls.enabled = false;
-    const { name, material } = e.object;
-    material.color.set(0x00ffff);
+    const { name } = e.object;
+
     // 拖拽的过程中把电缆和管孔尺寸隐藏
     const { cable, size } = getCurrentHoleCable(name);
     if (!cable || !size) return;
@@ -78,8 +98,7 @@ const useHoleDrag = (props: Props) => {
   // 拖拽结束
   dragControls.addEventListener("dragend", (e) => {
     twin.controls.enabled = true;
-    const { name, position, material } = e.object;
-    material.color.set(0xffff00);
+    const { name, position } = e.object;
 
     // 拖拽的结束后把电缆和管孔尺寸显示
     const { cable, size } = getCurrentHoleCable(name);
@@ -91,8 +110,14 @@ const useHoleDrag = (props: Props) => {
     size.position.y += hole / 1300;
   });
 
+  onUnmounted(() => {
+    dragControls?.deactivate();
+    dragControls?.dispose();
+    dragControls = null;
+  });
+
   return {
-    holeDragedList,
+    // holeDragControls: dragControls
   };
 };
 

@@ -288,20 +288,20 @@ export const createDirectionNorth = (
   div.style.opacity = "0.4";
   div.innerHTML = `北`;
 
-  const pageNumber = new CSS2DObject(div);
+  const north = new CSS2DObject(div);
   const center = startPoint.clone().add(endPoint).divideScalar(2);
-  pageNumber.position.copy(center);
+  north.position.copy(center);
   const eventType = "drag";
   const type = "剖面";
   const name = "方向";
-  pageNumber.name = `${eventType}-剖面序号${pageNum}-${name}`;
-  pageNumber.userData = {
+  north.name = `${eventType}-剖面序号${pageNum}-${name}`;
+  north.userData = {
     name, 
     pageNum,
     type,
     eventType,
   };
-  return pageNumber;
+  return north;
 };
 
 /*
@@ -630,32 +630,32 @@ export const box3IsContainsPoint = (
 };
 
 // 移除实时创建的网格模型
-export const removePlanes = (twin: CreateTwin) => {
-  twin.scene.traverse((item: any) => {
-    // 移除双击创建的网格模型
-    if (item.isGroup) {
-      const groupedByName: any = {};
-      // 把拖拽的同一个剖面标注的数据放在同一个数组
-      item.children.forEach((el: any) => {
-        const sName = el.name.slice(0, 10);
-        if (!groupedByName[sName]) {
-          groupedByName[sName] = [];
-        }
+// export const removePlanes = (twin: CreateTwin) => {
+//   twin.scene.traverse((item: any) => {
+//     // 移除双击创建的网格模型
+//     if (item.isGroup) {
+//       const groupedByName: any = {};
+//       // 把拖拽的同一个剖面标注的数据放在同一个数组
+//       item.children.forEach((el: any) => {
+//         const sName = el.name.slice(0, 10);
+//         if (!groupedByName[sName]) {
+//           groupedByName[sName] = [];
+//         }
 
-        groupedByName[sName].push(el);
-      });
+//         groupedByName[sName].push(el);
+//       });
 
-      // 从同一个数组中删除最后一次滚动之前的数据，保留最后一次拖拽的剖面标注数据
-      for (const key in groupedByName) {
-        if (Object.prototype.hasOwnProperty.call(groupedByName, key)) {
-          const record = groupedByName[key];
-          const startRecord = record.slice(0, record.length - 7);
-          item.remove(...startRecord);
-        }
-      }
-    }
-  });
-};
+//       // 从同一个数组中删除最后一次滚动之前的数据，保留最后一次拖拽的剖面标注数据
+//       for (const key in groupedByName) {
+//         if (Object.prototype.hasOwnProperty.call(groupedByName, key)) {
+//           const record = groupedByName[key];
+//           const startRecord = record.slice(0, record.length - 7);
+//           item.remove(...startRecord);
+//         }
+//       }
+//     }
+//   });
+// };
 
 // 三维坐标转二维坐标
 export const transform3DCoordsTo2D = (camera: THREE.Camera, point: any) => {
